@@ -1,0 +1,12 @@
+[manager]
+ratio = [1, 1, 1]
+
+[opener]
+xyzide_edit = [
+  { run = 'yazi-opener "$1"', desc = "Open in xyzide editor", block = false }
+]
+
+[open]
+rules = [
+  { name = "*", use = "xyzide_edit" }
+]

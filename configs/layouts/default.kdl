@@ -1,0 +1,13 @@
+layout {
+	pane split_direction="vertical" {
+		pane name="Explorer" command="sh" size="30%" {
+			args "-c" "exec $XYZ_FILEMANAGER"
+		}
+		pane name="Editor" command="sh" {
+			args "-c" "exec $XYZ_EDITOR"
+		}
+	}
+	pane size=1 borderless=true {
+		plugin location="zellij:status-bar"
+	}
+}
