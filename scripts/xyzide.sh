@@ -37,6 +37,11 @@ if [ -z "$XYZIDE_OPENER" ] && [ -x "$XYZIDE_SHARE/scripts/yazi-opener.sh" ]; the
   export XYZIDE_OPENER="$XYZIDE_SHARE/scripts/yazi-opener.sh"
 fi
 
+# Referenced by the Alt+a binding in the layout.
+if [ -z "$XYZIDE_ARENA" ] && [ -x "$XYZIDE_SHARE/scripts/arena.sh" ]; then
+  export XYZIDE_ARENA="$XYZIDE_SHARE/scripts/arena.sh"
+fi
+
 if [ ! -f "$LAYOUT" ]; then
   echo "Error: layout file not found: $LAYOUT" >&2
   exit 1
