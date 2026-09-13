@@ -31,7 +31,8 @@
             --prefix PATH : "$out/bin" \
             --set XYZIDE_SHARE "$out/share/xyzide" \
             --set YAZI_CONFIG_HOME "$out/share/xyzide/configs/yazi" \
-            --set LAYOUT_PATH "$out/share/xyzide/configs/layouts/default.kdl"
+            --set LAYOUT_PATH "$out/share/xyzide/configs/layouts/default.kdl" \
+            --set XYZIDE_OPENER "$out/bin/yazi-opener"
         '';
       };
     };

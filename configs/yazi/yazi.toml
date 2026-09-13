@@ -1,12 +1,18 @@
-[manager]
+# `[manager]` was renamed to `[mgr]` in yazi 25.2; the old name is ignored.
+[mgr]
 ratio = [1, 1, 1]
 
+# yazi substitutes its own placeholders, not shell positionals:
+# %s = all selected paths, %s1 = first selected path (quoting is handled by yazi).
+# XYZIDE_OPENER is exported by the launcher; falling back to a PATH lookup keeps
+# the nix-installed `yazi-opener` working too.
 [opener]
 xyzide_edit = [
-  { run = 'yazi-opener "$1"', desc = "Open in xyzide editor", block = false }
+  { run = '"${XYZIDE_OPENER:-yazi-opener}" %s1', desc = "Open in xyzide editor", block = false }
 ]
 
+# Rule keys are `url` / `mime`; `name` was removed in yazi 25.x.
 [open]
 rules = [
-  { name = "*", use = "xyzide_edit" }
+  { url = "*", use = "xyzide_edit" }
 ]
