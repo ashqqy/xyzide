@@ -94,8 +94,10 @@ class Renderer:
     def set_camera(self, eye, target):
         self.eye = eye.astype(np.float32)
         fwd = unit(target - eye)
-        right = unit(np.cross(fwd, np.array([0.0, 1.0, 0.0], np.float32)))
-        up = np.cross(right, fwd)
+        # right = up x forward (not forward x up): the other order yields a
+        # left-handed basis, which mirrors the whole scene horizontally.
+        right = unit(np.cross(np.array([0.0, 1.0, 0.0], np.float32), fwd))
+        up = np.cross(fwd, right)
         self._basis = np.stack([right, up, fwd])          # world -> view rows
         self._rays = (fwd[None, None, :]
                       + self._ndc_x[..., None] * right[None, None, :]
@@ -700,12 +702,42 @@ def draw_scene(r, game, now):
         if p is None:
             continue
         col = (90, 230, 120) if u.team == game.me.team else (250, 96, 96)
-        r.bar(p[0], p[1], 16, u.hp / u.hp_max, col)
+        # scale with the viewport so the bar does not dwarf the fighter on a
+        # small pane
+        width = max(6, min(20, int(r.w * 0.075)))
+        r.bar(p[0], p[1], width, u.hp / u.hp_max, col)
 
 
 # --------------------------------------------------------------------- hud --
 
 RESET = "\x1b[0m"
+
+
+def fit(text, cols):
+    """Cut a decorated string to `cols` printable columns.
+
+    Escape sequences are copied through untouched and cost no width.  Nothing
+    may ever reach the right edge of the bottom row: the wrap would scroll the
+    whole screen and desynchronise the frame-delta cache.
+    """
+    out = []
+    width = 0
+    i = 0
+    while i < len(text):
+        if text[i] == "\x1b":
+            j = i + 2
+            while j < len(text) and not text[j].isalpha():
+                j += 1
+            out.append(text[i:j + 1])
+            i = j + 1
+            continue
+        if width >= cols:
+            break
+        out.append(text[i])
+        width += 1
+        i += 1
+    out.append(RESET)
+    return "".join(out)
 
 
 def hud(game, rows, cols, fps, sound="off"):
@@ -749,13 +781,14 @@ def hud(game, rows, cols, fps, sound="off"):
 
     tail = [t for t in game.feed if game.time - t[0] < 5.0]
     note = tail[-1][1] if tail else ""
-    lines.append(f"\x1b[38;2;110;110;130m WASD move · ←↑↓→ aim · SPACE fire · "
+    lines.append(f"\x1b[38;2;110;110;130m WASD move · arrows aim · SPACE fire · "
                  f"E super · M sound · R rematch · Q quit{RESET}  "
                  f"\x1b[38;2;200;180;120m{note}{RESET}")
 
     out = []
     for i, text in enumerate(lines[:rows]):
-        out.append(f"\x1b[{rows - len(lines) + i + 1};1H\x1b[2K{text}")
+        row = rows - len(lines) + i + 1
+        out.append(f"\x1b[{row};1H\x1b[2K{fit(text, cols - 1)}")
     return "".join(out)
 
 
@@ -848,7 +881,9 @@ def main():
     resized = [True]
     signal.signal(signal.SIGWINCH, lambda *_: resized.__setitem__(0, True))
 
-    out.write("\x1b[?1049h\x1b[?25l")
+    # ?7l disables autowrap: without it a single overlong line at the bottom
+    # row scrolls the screen and every later delta frame lands one row off.
+    out.write("\x1b[?1049h\x1b[?25l\x1b[?7l")
     out.flush()
     try:
         tty.setraw(fd)
@@ -860,6 +895,7 @@ def main():
         cam = camera_goal(game.me)
         last = time.monotonic()
         fps = 0.0
+        repaint = 3.0
         while True:
             if resized[0]:
                 resized[0] = False
@@ -872,6 +908,10 @@ def main():
             dt = min(0.1, now - last)
             last = now
             fps = fps * 0.9 + (1.0 / dt) * 0.1 if dt > 0 else fps
+            repaint -= dt
+            if repaint <= 0.0:          # self-heal if the terminal ever drifts
+                repaint = 3.0
+                r.invalidate()
 
             want = ctl.poll(now)
             if ctl.quit:
@@ -904,7 +944,7 @@ def main():
         except Exception:
             pass
         termios.tcsetattr(fd, termios.TCSADRAIN, saved)
-        out.write("\x1b[0m\x1b[?25h\x1b[?1049l")
+        out.write("\x1b[0m\x1b[?7h\x1b[?25h\x1b[?1049l")
         out.flush()
     return 0
 

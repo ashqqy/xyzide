@@ -4,8 +4,8 @@
 # dependency is reported inside the pane instead of flashing it closed.
 
 HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-GAME="${XYZIDE_ARENA_PY:-$HERE/brawl3d.py}"
-PY="${XYZIDE_PYTHON:-python3}"
+GAME="${XYZ_ARENA_PY:-$HERE/brawl3d.py}"
+PY="${XYZ_PYTHON:-python3}"
 
 fail() {
   printf '\n  %s\n\n  Press ENTER to close this pane.\n' "$1" >&2

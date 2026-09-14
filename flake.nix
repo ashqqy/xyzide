@@ -3,46 +3,45 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
   };
 
   outputs =
-    { self, nixpkgs }:
-    let
-      system = "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
-      # the arena renders with numpy, so it gets its own interpreter
-      arenaPython = pkgs.python3.withPackages (ps: [ ps.numpy ]);
-    in
-    {
-      packages.${system}.default = pkgs.stdenv.mkDerivation {
-        pname = "xyzide";
-        version = "1.0.0";
+    { self, nixpkgs, flake-utils }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
+      let
+        pkgs = nixpkgs.legacyPackages.${system};
 
-        src = ./.;
+        # the arena game renders with numpy, so it gets its own interpreter
+        arenaPython = pkgs.python3.withPackages (ps: [ ps.numpy ]);
 
-        nativeBuildInputs = [ pkgs.makeWrapper ];
+        runtimeDeps = [
+          pkgs.zellij
+          pkgs.yazi
+        ];
+      in
+      {
+        packages.default = pkgs.stdenv.mkDerivation {
+          pname = "xyzide";
+          version = "1.0.0";
 
-        installPhase = ''
-          mkdir -p $out/bin $out/share/xyzide
-          cp -r configs $out/share/xyzide/
-          cp scripts/yazi-opener.sh $out/bin/yazi-opener
-          cp scripts/arena.sh $out/bin/xyzide-arena
-          cp scripts/brawl3d.py scripts/arena_audio.py $out/share/xyzide/
-          cp scripts/xyzide.sh $out/bin/xyzide
-          chmod +x $out/bin/*
+          src = ./.;
 
-          wrapProgram $out/bin/xyzide \
-            --prefix PATH : "$out/bin" \
-            --set XYZIDE_SHARE "$out/share/xyzide" \
-            --set YAZI_CONFIG_HOME "$out/share/xyzide/configs/yazi" \
-            --set LAYOUT_PATH "$out/share/xyzide/configs/layouts/default.kdl" \
-            --set XYZIDE_OPENER "$out/bin/yazi-opener" \
-            --set XYZIDE_ARENA "$out/bin/xyzide-arena"
+          nativeBuildInputs = [ pkgs.makeWrapper ];
 
-          wrapProgram $out/bin/xyzide-arena \
-            --set XYZIDE_PYTHON "${arenaPython}/bin/python3" \
-            --set XYZIDE_ARENA_PY "$out/share/xyzide/brawl3d.py"
-        '';
-      };
-    };
+          installPhase = ''
+            mkdir -p $out/bin $out/share/xyzide
+            cp -r configs $out/share/xyzide/
+            cp -r scripts $out/share/xyzide/
+            chmod +x $out/share/xyzide/scripts/*.sh
+
+            makeWrapper $out/share/xyzide/scripts/xyzide.sh $out/bin/xyzide \
+              --prefix PATH : "${pkgs.lib.makeBinPath runtimeDeps}" \
+              --set XYZ_SHARE "$out/share/xyzide" \
+              --set XYZ_PYTHON "${arenaPython}/bin/python3"
+          '';
+        };
+      }
+    );
 }

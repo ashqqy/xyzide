@@ -1,14 +1,22 @@
 #!/usr/bin/env bash
 #
-# Launcher for running xyzide straight from a checkout: ./xyzide.sh
-# It injects the same environment that the nix wrapper sets up in flake.nix,
-# then hands over to the real script in scripts/.
+# Convenience launcher for running straight from a checkout: ./xyzide.sh
+# Packaged installs go through the nix wrapper, which sets XYZ_SHARE itself.
 
-XYZIDE_SHARE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-export XYZIDE_SHARE
-export YAZI_CONFIG_HOME="$XYZIDE_SHARE/configs/yazi"
-export LAYOUT_PATH="$XYZIDE_SHARE/configs/layouts/default.kdl"
-export XYZIDE_OPENER="$XYZIDE_SHARE/scripts/yazi-opener.sh"
-export XYZIDE_ARENA="$XYZIDE_SHARE/scripts/arena.sh"
+XYZ_SHARE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+export XYZ_SHARE
 
-exec bash "$XYZIDE_SHARE/scripts/xyzide.sh" "$@"
+# $EDITOR is often unset, so fall back to whichever editor is actually present.
+# scripts/editors/ has a profile for each of these names; note that helix is
+# `hx` upstream and in nixpkgs but `helix` on Arch.
+if [ -z "${XYZ_EDITOR:-}" ] && [ -z "${EDITOR:-}" ]; then
+  for candidate in hx helix nvim vim; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      XYZ_EDITOR="$candidate"
+      break
+    fi
+  done
+  export XYZ_EDITOR
+fi
+
+exec bash "$XYZ_SHARE/scripts/xyzide.sh" "$@"

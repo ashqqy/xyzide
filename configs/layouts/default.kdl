@@ -1,7 +1,7 @@
 layout {
 	pane split_direction="vertical" {
-		pane name="Explorer" command="sh" size="30%" {
-			args "-c" "exec $XYZ_FILEMANAGER"
+		pane name="Explorer" command="sh" size=40 {
+			args "-c" "exec yazi"
 		}
 		pane name="Editor" command="sh" {
 			args "-c" "exec $XYZ_EDITOR"
@@ -18,7 +18,7 @@ layout {
 keybinds {
 	shared_except "locked" {
 		bind "Alt a" {
-			Run "sh" "-c" "exec \"$XYZIDE_ARENA\"" {
+			Run "sh" "-c" "exec \"$XYZ_ARENA\"" {
 				floating true
 				name "Arena"
 				x "4%"
