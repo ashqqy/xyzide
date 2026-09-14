@@ -3,37 +3,41 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
   };
 
   outputs =
-    { self, nixpkgs }:
-    let
-      system = "x86_64-linux";
-      pkgs = nixpkgs.legacyPackages.${system};
-    in
-    {
-      packages.${system}.default = pkgs.stdenv.mkDerivation {
-        pname = "xyzide";
-        version = "1.0.0";
+    { self, nixpkgs, flake-utils }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
+      let
+        pkgs = nixpkgs.legacyPackages.${system};
 
-        src = ./.;
+        runtimeDeps = [
+          pkgs.zellij
+          pkgs.yazi
+        ];
+      in
+      {
+        packages.default = pkgs.stdenv.mkDerivation {
+          pname = "xyzide";
+          version = "1.0.0";
 
-        nativeBuildInputs = [ pkgs.makeWrapper ];
+          src = ./.;
 
-        installPhase = ''
-          mkdir -p $out/bin $out/share/xyzide
-          cp -r configs $out/share/xyzide/
-          cp scripts/yazi-opener.sh $out/bin/yazi-opener
-          cp scripts/xyzide.sh $out/bin/xyzide
-          chmod +x $out/bin/*
+          nativeBuildInputs = [ pkgs.makeWrapper ];
 
-          wrapProgram $out/bin/xyzide \
-            --prefix PATH : "$out/bin" \
-            --set XYZIDE_SHARE "$out/share/xyzide" \
-            --set YAZI_CONFIG_HOME "$out/share/xyzide/configs/yazi" \
-            --set LAYOUT_PATH "$out/share/xyzide/configs/layouts/default.kdl" \
-            --set XYZIDE_OPENER "$out/bin/yazi-opener"
-        '';
-      };
-    };
+          installPhase = ''
+            mkdir -p $out/bin $out/share/xyzide
+            cp -r configs $out/share/xyzide/
+            cp -r scripts $out/share/xyzide/
+            chmod +x $out/share/xyzide/scripts/*.sh
+
+            makeWrapper $out/share/xyzide/scripts/xyzide.sh $out/bin/xyzide \
+              --prefix PATH : "${pkgs.lib.makeBinPath runtimeDeps}" \
+              --set XYZ_SHARE "$out/share/xyzide"
+          '';
+        };
+      }
+    );
 }
