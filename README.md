@@ -55,6 +55,8 @@ scripts/
 configs/
   layouts/default.kdl        the two-pane zellij layout (Explorer | Editor)
   yazi/yazi.toml             yazi config: wires its opener to opener.sh
+  yazi/keymap.toml           yazi keybindings: adds a preview-pane toggle
+  yazi/plugins/toggle-pane.yazi  vendored yazi-rs/plugins toggle-pane plugin
 flake.nix                    nix package (wraps the checkout + bundles zellij/yazi)
 ```
 
@@ -80,6 +82,14 @@ not to xyzide.
 
 `YAZI_CONFIG_HOME` is also set (to `$XYZ_SHARE/configs/yazi`) but isn't a
 xyzide variable — it's yazi's own config-directory variable.
+
+## Keybindings
+
+`configs/yazi/keymap.toml` adds one binding on top of yazi's defaults:
+`T` toggles the preview pane (`[mgr] ratio`'s third slot) on and off, via the
+vendored `configs/yazi/plugins/toggle-pane.yazi` plugin (from
+[yazi-rs/plugins](https://github.com/yazi-rs/plugins), pinned to match the
+bundled yazi version rather than fetched at runtime).
 
 ## How file-opening works
 
