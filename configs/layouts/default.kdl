@@ -11,3 +11,23 @@ layout {
 		plugin location="zellij:status-bar"
 	}
 }
+
+// Session-local keys. Living in the layout rather than in a config file means
+// xyzide does not have to take over the user's own zellij configuration.
+// Alt+a is used rather than Ctrl+b so the usual Ctrl+b binding stays free.
+keybinds {
+	shared_except "locked" {
+		bind "Alt a" {
+			Run "sh" "-c" "exec \"$XYZIDE_ARENA\"" {
+				floating true
+				name "Arena"
+				x "4%"
+				y "4%"
+				width "92%"
+				height "92%"
+				close_on_exit true
+			}
+			SwitchToMode "Normal"
+		}
+	}
+}
