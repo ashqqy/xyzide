@@ -1,7 +1,7 @@
 layout {
 	pane split_direction="vertical" {
 		pane name="Explorer" command="sh" size="30%" {
-			args "-c" "exec $XYZ_FILEMANAGER"
+			args "-c" "exec yazi"
 		}
 		pane name="Editor" command="sh" {
 			args "-c" "exec $XYZ_EDITOR"
