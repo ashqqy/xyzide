@@ -1,8 +1,19 @@
 show_startup_tips false
 show_release_notes false
+support_kitty_graphics_protocol true
 
 keybinds {
 	shared_except "locked" {
-		bind "Alt y" { FocusLastPane; }
+		bind "Alt y" {
+			Run "sh" "-c" "$XYZ_SHARE/scripts/yazi-toggle.sh" {
+				floating true
+				close_on_exit true
+				borderless true
+				x "0"
+				y "0"
+				width "1"
+				height "1"
+			}
+		}
 	}
 }

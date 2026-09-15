@@ -22,6 +22,11 @@ if [ -z "${XYZ_EDIT_CMD:-}" ]; then
 fi
 export XYZ_EDIT_CMD
 
+# byte written before XYZ_EDIT_CMD to leave whatever mode the editor is in;
+# defaults to Escape, but modeless editors (nano, emacs) use Escape as a Meta
+# prefix instead, so their profiles set this to "" to skip it
+export XYZ_EDIT_PRE="${XYZ_EDIT_PRE-27}"
+
 export YAZI_CONFIG_HOME="$XYZ_SHARE/configs/yazi"
 export XYZ_OPENER="$XYZ_SHARE/scripts/opener.sh"
 

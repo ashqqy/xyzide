@@ -16,6 +16,14 @@
         runtimeDeps = [
           pkgs.zellij
           pkgs.yazi
+
+          # yazi preview deps
+          pkgs._7zz
+          pkgs.jq
+          pkgs.poppler-utils
+          pkgs.resvg
+          pkgs.ffmpeg
+          pkgs.imagemagick
         ];
       in
       {

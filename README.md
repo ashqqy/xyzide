@@ -113,8 +113,16 @@ session, so several projects can each have their own xyzide running at once.
 only (passed to zellij via `--config`, so it never touches your own
 `~/.config/zellij/config.kdl`). On top of zellij's regular defaults it adds:
 
-- `Alt y` — jump focus between the Explorer (yazi) pane and the Editor pane,
-  and back (`FocusLastPane`); works from either side.
+- `Alt y` — toggle focus between the Explorer (yazi) pane and whatever pane
+  you jumped from, from anywhere in the session (not just the Editor pane).
+  Runs `scripts/yazi-toggle.sh`, which asks zellij (`list-panes --json`) for
+  the currently focused pane: if it's not Explorer, it remembers that pane
+  and focuses Explorer; if it is, it focuses whatever was remembered. This
+  runs in a throwaway 1x1 floating pane that closes itself immediately, so
+  it never disturbs the layout.
+- `support_kitty_graphics_protocol true` is set explicitly, since zellij's
+  auto-detection of it (required for yazi's image previews) doesn't always
+  succeed.
 
 `configs/yazi/init.lua` hides yazi's status bar — there's no config toggle
 for it, so it overrides yazi's `Status`/`Tab` components directly — and
@@ -128,6 +136,7 @@ scripts/
   env.sh                     single source of truth for all XYZ_* env vars
   xyzide.sh                  sources options.sh then env.sh, checks dependencies, starts zellij
   opener.sh                  types an "open file" command into the editor pane
+  yazi-toggle.sh            Alt+y: toggles focus between Explorer and the last pane
   editors/*.sh               per-editor XYZ_EDIT_CMD, picked by env.sh from $XYZ_EDITOR's binary name
 configs/
   layouts/default.kdl        the two-pane zellij layout (Explorer | Editor)
@@ -153,6 +162,7 @@ not to xyzide.
 | `XYZ_SHARE` | *(none — set by the nix package)* | where `configs/` and `scripts/` live; xyzide refuses to start if this isn't set |
 | `XYZ_EDITOR` | `$EDITOR` (or `-e`/`--editor`) | the editor binary to launch; **required**, no fallback |
 | `XYZ_EDIT_CMD` | picked from `scripts/editors/<binary>.sh`; **required** if there's no profile for your editor | command typed into the editor to open a file; `%s` is replaced with the path |
+| `XYZ_EDIT_PRE` | picked from `scripts/editors/<binary>.sh`, defaults to Escape (`27`) | byte written before `XYZ_EDIT_CMD`; set to `''` by modeless editors (nano, emacs) that treat Escape as a Meta prefix instead of "leave this mode" |
 | `XYZ_LAYOUT_PATH` | `$XYZ_SHARE/configs/layouts/default.kdl` (or `-l`/`--layout`) | zellij layout file |
 | `XYZ_OPENER` | `$XYZ_SHARE/scripts/opener.sh` | script yazi calls to open a file in the editor; fixed, not user-overridable |
 | `XYZ_SESSION_NAME` | `xyzide-<hash-of-the-directory>` (or `-s`/`--session`) | zellij session name; each directory gets its own by default, so several projects can run at once |
@@ -165,36 +175,59 @@ xyzide variable — it's yazi's own config-directory variable.
 `configs/yazi/yazi.toml` registers `scripts/opener.sh` as yazi's
 opener for every file. That script:
 
-1. focuses the editor pane (to its right, per `configs/layouts/default.kdl`),
-2. sends Escape (to leave whatever mode the editor is in),
+1. looks up the pane named `Editor` (via `zellij action list-panes --json`)
+   and focuses it by ID,
+2. writes `XYZ_EDIT_PRE` if it's non-empty (Escape by default, to leave
+   whatever mode a modal editor is in),
 3. types `XYZ_EDIT_CMD` with the file path substituted for `%s`,
 4. presses Enter,
-5. focuses back to the yazi pane.
+5. focuses back to the pane named `Explorer`.
 
-This is why `XYZ_EDIT_CMD` has to match your editor's own command syntax.
-The `move-focus right`/`left` pair is hardcoded to match the default
-layout's pane order — if you change `configs/layouts/default.kdl` to put the
-editor pane somewhere else, update `scripts/opener.sh` to match.
+This is why `XYZ_EDIT_CMD` (and `XYZ_EDIT_PRE`) have to match your editor's
+own command syntax. Panes are found by the `name=` set on them in
+`configs/layouts/default.kdl`, not by position — so this keeps working even
+with extra panes open in the session.
 
 ### Editor profiles
 
 `XYZ_EDIT_CMD` isn't set directly — `env.sh` takes the basename of
 `$XYZ_EDITOR` and looks for `scripts/editors/<that-name>.sh`. If found, it's
-sourced to set `XYZ_EDIT_CMD`. If you've already set `XYZ_EDIT_CMD` yourself,
-that wins and no profile is loaded. If neither applies, xyzide refuses to
-start — there's no guessed default, so an editor without a profile needs
-`XYZ_EDIT_CMD` set by hand.
+sourced to set `XYZ_EDIT_CMD` (and optionally `XYZ_EDIT_PRE`). If you've
+already set `XYZ_EDIT_CMD` yourself, that wins and no profile is loaded. If
+neither applies, xyzide refuses to start — there's no guessed default, so an
+editor without a profile needs `XYZ_EDIT_CMD` set by hand.
 
-Shipped profiles: `helix.sh` and `hx.sh` use `:open "%s"`; `vim.sh` and
-`nvim.sh` use `:e %s` (one file per binary name, so the lookup stays a plain
-filename match). To add another editor, drop a
-`scripts/editors/<binary-name>.sh` that exports `XYZ_EDIT_CMD`.
+Shipped profiles (one file per binary name, so the lookup stays a plain
+filename match):
+
+| Profile(s) | `XYZ_EDIT_CMD` | `XYZ_EDIT_PRE` |
+|---|---|---|
+| `helix.sh`, `hx.sh` | `:open "%s"` | Escape (default) |
+| `vim.sh`, `nvim.sh`, `vi.sh` | `:e %s` | Escape (default) |
+| `nano.sh` | Read File (`^R`), toggle new buffer (`M-f`), then the path | none — Escape is nano's Meta prefix |
+| `emacs.sh` | find-file (`C-x C-f`), then the path | none — Escape is emacs's Meta prefix |
+
+To add another editor, drop a `scripts/editors/<binary-name>.sh` that
+exports `XYZ_EDIT_CMD`, and `XYZ_EDIT_PRE=''` if it's not a modal editor
+where Escape safely means "cancel".
 
 ## Nix
 
-`flake.nix` builds a package that bundles `zellij` and `yazi` so the
-installed `xyzide` binary works without either already being on `$PATH`. The
-editor is deliberately **not** bundled — xyzide always launches whatever
-`$EDITOR` points at in your own environment.
+`flake.nix` builds a package that bundles `zellij`, `yazi`, and yazi's
+optional preview tools (`7zz`, `jq`, `poppler-utils`, `resvg`, `ffmpeg`,
+`imagemagick`) so the installed `xyzide` binary works without any of them
+already being on `$PATH`. The editor is deliberately **not** bundled —
+xyzide always launches whatever `$EDITOR` points at in your own environment.
 
 Supports `x86_64-linux`, `aarch64-linux`, `x86_64-darwin`, `aarch64-darwin`.
+
+### Image previews under zellij
+
+Yazi's image preview needs the outer terminal to render either the Kitty
+graphics protocol or Sixel, but zellij doesn't reliably pass either through
+to the real terminal — this is a known zellij limitation, not something
+`configs/yazi/yazi.toml` can work around. If neither protocol is available,
+yazi falls back to `ueberzugpp` (a compositor overlay, Linux-only, needs
+Hyprland/Sway/Niri/Wayfire) if it's on `$PATH`, then further to `chafa`-style
+ASCII art, or no preview at all. `ueberzugpp` isn't bundled by this flake —
+install it yourself if you want that fallback.
