@@ -1,0 +1,8 @@
+show_startup_tips false
+show_release_notes false
+
+keybinds {
+	shared_except "locked" {
+		bind "Alt y" { FocusLastPane; }
+	}
+}

@@ -1,27 +1,91 @@
 # xyzide
 
-A terminal IDE built from three tools glued together with `zellij`:
+A terminal IDE built from three tools glued together with `zellij`: a file
+manager on one side, your editor on the other, tied together by a `zellij`
+session and a couple of scripts. No editor plugin required — selecting a
+file in the file manager opens it in the editor pane.
+
+![xyzide: yazi on the left, an editor on the right](docs/screenshot.png)
 
 - **zellij** — the multiplexer; owns the session and the pane layout.
-- **yazi** in the left pane.
+- **yazi** in the left pane, as the file manager.
 - your **editor** (`$EDITOR`) in the right pane.
 
-Selecting a file in the file manager makes it open in the editor pane — not
-via any editor plugin, but by having zellij literally type an open-file
-command into that pane on your behalf. See "How file-opening works" below.
+Selecting a file in yazi makes it open in the editor pane — not via any
+editor plugin, but by having zellij literally type an open-file command into
+that pane on your behalf (see [How file-opening works](#how-file-opening-works)).
 **Helix and vim/nvim work out of the box**; other editors need `XYZ_EDIT_CMD`
-set manually (see below).
+set manually (see [Editor profiles](#editor-profiles)).
 
-## Usage
+## Installation
 
-xyzide is a nix package — it isn't meant to be run outside of it (see
-[Nix](#nix)):
+xyzide is packaged as a Nix flake and isn't meant to be built or run outside
+of Nix.
+
+### On NixOS
+
+Add it as a flake input and put the package on your system (or into a
+home-manager profile):
+
+```nix
+{
+  inputs.xyzide.url = "github:ashqqy/xyzide";
+
+  outputs = { self, nixpkgs, xyzide, ... }: {
+    nixosConfigurations.<host> = nixpkgs.lib.nixosSystem {
+      # ...
+      modules = [
+        {
+          environment.systemPackages = [
+            xyzide.packages.${pkgs.system}.default
+          ];
+        }
+      ];
+    };
+  };
+}
+```
+
+For home-manager, add the same package to `home.packages` instead. Rebuild
+your system (`nixos-rebuild switch`) or home-manager generation, then `xyzide`
+is on your `$PATH`.
+
+To just try it without touching your system config:
 
 ```sh
-nix run .
-# or, once installed:
-xyzide
+nix run github:ashqqy/xyzide
 ```
+
+### Without NixOS
+
+Any machine with Nix installed works the same way, NixOS or not:
+
+1. Install Nix if you haven't already (the [official installer](https://nixos.org/download)
+   works fine).
+2. Make sure flakes are enabled — add to `~/.config/nix/nix.conf`
+   (create it if it doesn't exist):
+
+   ```
+   experimental-features = nix-command flakes
+   ```
+
+3. Run it directly, or install it into your user profile:
+
+   ```sh
+   nix run github:ashqqy/xyzide          # one-off
+   nix profile install github:ashqqy/xyzide   # puts `xyzide` on $PATH permanently
+   ```
+
+### From a local checkout
+
+```sh
+git clone git@github.com:ashqqy/xyzide.git
+cd xyzide
+nix run .
+# or: nix profile install .
+```
+
+## Usage
 
 `$EDITOR` must be set — xyzide has no built-in fallback list of editors to
 try.
@@ -43,6 +107,19 @@ Running xyzide again from the same project directory reattaches to the same
 session; running it from a different directory starts an independent
 session, so several projects can each have their own xyzide running at once.
 
+## Keybindings
+
+`configs/zellij/config.kdl` is a zellij config scoped to xyzide sessions
+only (passed to zellij via `--config`, so it never touches your own
+`~/.config/zellij/config.kdl`). On top of zellij's regular defaults it adds:
+
+- `Alt y` — jump focus between the Explorer (yazi) pane and the Editor pane,
+  and back (`FocusLastPane`); works from either side.
+
+`configs/yazi/init.lua` hides yazi's status bar — there's no config toggle
+for it, so it overrides yazi's `Status`/`Tab` components directly — and
+hands that row back to the file list.
+
 ## Architecture
 
 ```
@@ -54,7 +131,9 @@ scripts/
   editors/*.sh               per-editor XYZ_EDIT_CMD, picked by env.sh from $XYZ_EDITOR's binary name
 configs/
   layouts/default.kdl        the two-pane zellij layout (Explorer | Editor)
+  zellij/config.kdl          zellij config for xyzide sessions: adds a focus-toggle keybinding
   yazi/yazi.toml             yazi config: wires its opener to opener.sh
+  yazi/init.lua              hides yazi's status bar
 flake.nix                    nix package (wraps the checkout + bundles zellij/yazi)
 ```
 
