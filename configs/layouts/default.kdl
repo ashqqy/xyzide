@@ -3,8 +3,11 @@ layout {
 		pane name="Explorer" command="sh" size="25%" {
 			args "-c" "exec yazi"
 		}
-		pane name="Editor" command="sh" {
-			args "-c" "exec $XYZ_EDITOR"
+		pane split_direction="horizontal" {
+			pane name="Editor" command="sh" {
+				args "-c" "exec $XYZ_EDITOR"
+			}
+			pane name="Terminal" size="25%"
 		}
 	}
 	pane size=1 borderless=true {

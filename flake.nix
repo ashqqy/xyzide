@@ -24,7 +24,10 @@
           pkgs.resvg
           pkgs.ffmpeg
           pkgs.imagemagick
-        ];
+        ]
+        # ueberzugpp/chafa: zellij image passthrough is unreliable
+        ++ pkgs.lib.optional (pkgs.lib.meta.availableOn pkgs.stdenv.hostPlatform pkgs.ueberzugpp) pkgs.ueberzugpp
+        ++ pkgs.lib.optional (pkgs.lib.meta.availableOn pkgs.stdenv.hostPlatform pkgs.chafa) pkgs.chafa;
       in
       {
         packages.default = pkgs.stdenv.mkDerivation {

@@ -9,7 +9,8 @@ file in the file manager opens it in the editor pane.
 
 - **zellij** — the multiplexer; owns the session and the pane layout.
 - **yazi** in the left pane, as the file manager.
-- your **editor** (`$EDITOR`) in the right pane.
+- your **editor** (`$EDITOR`) in the top-right pane, with a plain shell
+  **Terminal** pane below it.
 
 Selecting a file in yazi makes it open in the editor pane — not via any
 editor plugin, but by having zellij literally type an open-file command into
@@ -120,9 +121,6 @@ only (passed to zellij via `--config`, so it never touches your own
   and focuses Explorer; if it is, it focuses whatever was remembered. This
   runs in a throwaway 1x1 floating pane that closes itself immediately, so
   it never disturbs the layout.
-- `support_kitty_graphics_protocol true` is set explicitly, since zellij's
-  auto-detection of it (required for yazi's image previews) doesn't always
-  succeed.
 
 `configs/yazi/init.lua` hides yazi's status bar — there's no config toggle
 for it, so it overrides yazi's `Status`/`Tab` components directly — and
@@ -139,7 +137,7 @@ scripts/
   yazi-toggle.sh            Alt+y: toggles focus between Explorer and the last pane
   editors/*.sh               per-editor XYZ_EDIT_CMD, picked by env.sh from $XYZ_EDITOR's binary name
 configs/
-  layouts/default.kdl        the two-pane zellij layout (Explorer | Editor)
+  layouts/default.kdl        the zellij layout (Explorer | Editor over Terminal)
   zellij/config.kdl          zellij config for xyzide sessions: adds a focus-toggle keybinding
   yazi/yazi.toml             yazi config: wires its opener to opener.sh
   yazi/init.lua              hides yazi's status bar
@@ -215,19 +213,24 @@ where Escape safely means "cancel".
 
 `flake.nix` builds a package that bundles `zellij`, `yazi`, and yazi's
 optional preview tools (`7zz`, `jq`, `poppler-utils`, `resvg`, `ffmpeg`,
-`imagemagick`) so the installed `xyzide` binary works without any of them
-already being on `$PATH`. The editor is deliberately **not** bundled —
-xyzide always launches whatever `$EDITOR` points at in your own environment.
+`imagemagick`, plus `ueberzugpp` and `chafa` — see below) so the installed
+`xyzide` binary works without any of them already being on `$PATH`. The
+editor is deliberately **not** bundled — xyzide always launches whatever
+`$EDITOR` points at in your own environment.
 
 Supports `x86_64-linux`, `aarch64-linux`, `x86_64-darwin`, `aarch64-darwin`.
+`ueberzugpp` and `chafa` are only added on systems nixpkgs actually packages
+them for, so the build never breaks on a platform missing one.
 
 ### Image previews under zellij
 
-Yazi's image preview needs the outer terminal to render either the Kitty
-graphics protocol or Sixel, but zellij doesn't reliably pass either through
+Yazi's image preview normally uses the outer terminal's Kitty graphics
+protocol or Sixel support, but zellij doesn't reliably pass either through
 to the real terminal — this is a known zellij limitation, not something
-`configs/yazi/yazi.toml` can work around. If neither protocol is available,
-yazi falls back to `ueberzugpp` (a compositor overlay, Linux-only, needs
-Hyprland/Sway/Niri/Wayfire) if it's on `$PATH`, then further to `chafa`-style
-ASCII art, or no preview at all. `ueberzugpp` isn't bundled by this flake —
-install it yourself if you want that fallback.
+`configs/yazi/yazi.toml` can work around. Rather than depend on the outer
+terminal at all (and tie this project to Kitty specifically), xyzide bundles
+`ueberzugpp` (a compositor overlay; Linux-only, needs Hyprland/Sway/Niri/
+Wayfire — outside those, or once its socket support ages out, yazi falls
+through to the next option) and `chafa` (ASCII-art rendering, works in any
+terminal) as fallbacks, so image previews work the same way regardless of
+which terminal emulator you're running xyzide in.
