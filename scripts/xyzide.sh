@@ -4,7 +4,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/options.sh"
 source "$SCRIPT_DIR/env.sh"
 
-for program in "$XYZ_EDITOR" yazi zellij; do
+for program in "$XYZ_EDITOR" yazi zellij jq; do
   if ! command -v "$program" &>/dev/null; then
     echo "Error: $program is not found in system PATH. Please install it." >&2
     exit 1

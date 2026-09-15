@@ -211,10 +211,9 @@ where Escape safely means "cancel".
 
 ## Nix
 
-`flake.nix` builds a package that bundles `zellij`, `yazi`, and yazi's
-optional preview tools (`7zz`, `jq`, `poppler-utils`, `resvg`, `ffmpeg`,
-`imagemagick`, plus `ueberzugpp` and `chafa` — see below) so the installed
-`xyzide` binary works without any of them already being on `$PATH`. The
+`flake.nix` builds a package that bundles `zellij`, `yazi`, and `jq` (used by
+the `Alt y` focus toggle) so the installed `xyzide` binary works without any
+of them already being on `$PATH`. The
 editor is deliberately **not** bundled — xyzide always launches whatever
 `$EDITOR` points at in your own environment.
 

@@ -16,6 +16,7 @@
         runtimeDeps = [
           pkgs.zellij
           pkgs.yazi
+          pkgs.jq # scripts/yazi-toggle.sh (Alt+y)
         ];
       in
       {
