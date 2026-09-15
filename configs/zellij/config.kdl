@@ -1,7 +1,5 @@
 show_startup_tips false
 show_release_notes false
-// zellij's KGP breaks yazi previews; without it yazi falls back to ueberzugpp
-support_kitty_graphics_protocol false
 
 keybinds {
 	shared_except "locked" {
