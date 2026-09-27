@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 
+# usage: opener.sh [--stay] FILE [LINE]
+
+STAY=false
+if [ "$1" = "--stay" ]; then
+  STAY=true
+  shift
+fi
+
 FILE="$1"
+LINE="$2"
 ENTER_KEY=13
 
 COMMAND="${XYZ_EDIT_CMD//%s/$FILE}"
@@ -20,4 +29,10 @@ if [ -n "$XYZ_EDIT_PRE" ]; then
 fi
 zellij action write-chars "$COMMAND"
 zellij action write "$ENTER_KEY"
-zellij action focus-pane-id "terminal_$EXPLORER_PANE"
+if [ -n "$LINE" ] && [ -n "$XYZ_EDIT_GOTO" ]; then
+  zellij action write-chars "${XYZ_EDIT_GOTO//%l/$LINE}"
+  zellij action write "$ENTER_KEY"
+fi
+if [ "$STAY" = false ]; then
+  zellij action focus-pane-id "terminal_$EXPLORER_PANE"
+fi

@@ -126,6 +126,16 @@ only (passed to zellij via `--config`, so it never touches your own
 for it, so it overrides yazi's `Status`/`Tab` components directly — and
 hands that row back to the file list.
 
+## Clicking file paths
+
+zellij's built-in `zellij:link` plugin underlines file paths (including
+`path:line:col` from compiler output) when you hover them in any pane, and
+opens them on click. Normally that spawns a new floating editor; xyzide
+instead starts zellij with `scripts/link/hx` as its `scrollback_editor`,
+which hands the path to `opener.sh`, so the file opens in the Editor pane
+(jumping to the line via `XYZ_EDIT_GOTO`) and focus stays there. The same
+applies to zellij's "edit scrollback" action.
+
 ## Architecture
 
 ```
@@ -134,6 +144,7 @@ scripts/
   env.sh                     single source of truth for all XYZ_* env vars
   xyzide.sh                  sources options.sh then env.sh, checks dependencies, starts zellij
   opener.sh                  types an "open file" command into the editor pane
+  link/hx                    zellij's scrollback editor: forwards clicked paths to opener.sh
   yazi-toggle.sh            Alt+y: toggles focus between Explorer and the last pane
   editors/*.sh               per-editor XYZ_EDIT_CMD, picked by env.sh from $XYZ_EDITOR's binary name
 configs/
@@ -161,8 +172,10 @@ not to xyzide.
 | `XYZ_EDITOR` | `$EDITOR` (or `-e`/`--editor`) | the editor binary to launch; **required**, no fallback |
 | `XYZ_EDIT_CMD` | picked from `scripts/editors/<binary>.sh`; **required** if there's no profile for your editor | command typed into the editor to open a file; `%s` is replaced with the path |
 | `XYZ_EDIT_PRE` | picked from `scripts/editors/<binary>.sh`, defaults to Escape (`27`) | byte written before `XYZ_EDIT_CMD`; set to `''` by modeless editors (nano, emacs) that treat Escape as a Meta prefix instead of "leave this mode" |
+| `XYZ_EDIT_GOTO` | picked from `scripts/editors/<binary>.sh`, empty otherwise | command typed after opening a file to jump to line `%l`, when a `path:line` is clicked; empty means the line is ignored |
 | `XYZ_LAYOUT_PATH` | `$XYZ_SHARE/configs/layouts/default.kdl` (or `-l`/`--layout`) | zellij layout file |
 | `XYZ_OPENER` | `$XYZ_SHARE/scripts/opener.sh` | script yazi calls to open a file in the editor; fixed, not user-overridable |
+| `XYZ_LINK_OPENER` | `$XYZ_SHARE/scripts/link/hx` | passed to zellij as `scrollback_editor`, so clicked paths open in the Editor pane; fixed, not user-overridable |
 | `XYZ_SESSION_NAME` | `xyzide-<hash-of-the-directory>` (or `-s`/`--session`) | zellij session name; each directory gets its own by default, so several projects can run at once |
 
 `YAZI_CONFIG_HOME` is also set (to `$XYZ_SHARE/configs/yazi`) but isn't a
@@ -198,15 +211,16 @@ editor without a profile needs `XYZ_EDIT_CMD` set by hand.
 Shipped profiles (one file per binary name, so the lookup stays a plain
 filename match):
 
-| Profile(s) | `XYZ_EDIT_CMD` | `XYZ_EDIT_PRE` |
-|---|---|---|
-| `helix.sh`, `hx.sh` | `:open "%s"` | Escape (default) |
-| `vim.sh`, `nvim.sh`, `vi.sh` | `:e %s` | Escape (default) |
-| `nano.sh` | Read File (`^R`), toggle new buffer (`M-f`), then the path | none — Escape is nano's Meta prefix |
-| `emacs.sh` | find-file (`C-x C-f`), then the path | none — Escape is emacs's Meta prefix |
+| Profile(s) | `XYZ_EDIT_CMD` | `XYZ_EDIT_PRE` | `XYZ_EDIT_GOTO` |
+|---|---|---|---|
+| `helix.sh`, `hx.sh` | `:open "%s"` | Escape (default) | `:%l` |
+| `vim.sh`, `nvim.sh`, `vi.sh` | `:e %s` | Escape (default) | `:%l` |
+| `nano.sh` | Read File (`^R`), toggle new buffer (`M-f`), then the path | none — Escape is nano's Meta prefix | Go To Line (`^_`), then the number |
+| `emacs.sh` | find-file (`C-x C-f`), then the path | none — Escape is emacs's Meta prefix | goto-line (`M-g g`), then the number |
 
 To add another editor, drop a `scripts/editors/<binary-name>.sh` that
-exports `XYZ_EDIT_CMD`, and `XYZ_EDIT_PRE=''` if it's not a modal editor
+exports `XYZ_EDIT_CMD` (plus `XYZ_EDIT_GOTO` for line jumps), and
+`XYZ_EDIT_PRE=''` if it's not a modal editor
 where Escape safely means "cancel".
 
 ## Nix

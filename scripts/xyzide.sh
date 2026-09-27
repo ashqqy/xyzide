@@ -17,5 +17,6 @@ if [ ! -f "$XYZ_LAYOUT_PATH" ]; then
 fi
 
 if ! zellij --config "$XYZ_SHARE/configs/zellij/config.kdl" attach --force-run-commands "$XYZ_SESSION_NAME" 2>/dev/null; then
-  zellij --config "$XYZ_SHARE/configs/zellij/config.kdl" --session "$XYZ_SESSION_NAME" --new-session-with-layout "$XYZ_LAYOUT_PATH"
+  zellij --config "$XYZ_SHARE/configs/zellij/config.kdl" --session "$XYZ_SESSION_NAME" --new-session-with-layout "$XYZ_LAYOUT_PATH" \
+    options --scrollback-editor "$XYZ_LINK_OPENER"
 fi

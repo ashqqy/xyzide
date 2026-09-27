@@ -27,8 +27,12 @@ export XYZ_EDIT_CMD
 # prefix instead, so their profiles set this to "" to skip it
 export XYZ_EDIT_PRE="${XYZ_EDIT_PRE-27}"
 
+# command to jump to line %l after opening a file
+export XYZ_EDIT_GOTO="${XYZ_EDIT_GOTO-}"
+
 export YAZI_CONFIG_HOME="$XYZ_SHARE/configs/yazi"
 export XYZ_OPENER="$XYZ_SHARE/scripts/opener.sh"
+export XYZ_LINK_OPENER="$XYZ_SHARE/scripts/link/hx"
 
 export XYZ_LAYOUT_PATH="${XYZ_LAYOUT_PATH:-$XYZ_SHARE/configs/layouts/default.kdl}"
 

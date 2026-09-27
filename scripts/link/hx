@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+# named "hx" so zellij passes the clicked path as FILE:LINE
+
+ARG="$1"
+FILE="$ARG"
+LINE=""
+if [ ! -e "$ARG" ] && [[ "$ARG" =~ ^(.+):([0-9]+)$ ]]; then
+  FILE="${BASH_REMATCH[1]}"
+  LINE="${BASH_REMATCH[2]}"
+fi
+
+exec "$XYZ_OPENER" --stay "$FILE" $LINE

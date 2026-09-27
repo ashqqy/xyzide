@@ -32,7 +32,7 @@
             mkdir -p $out/bin $out/share/xyzide
             cp -r configs $out/share/xyzide/
             cp -r scripts $out/share/xyzide/
-            chmod +x $out/share/xyzide/scripts/*.sh
+            chmod +x $out/share/xyzide/scripts/*.sh $out/share/xyzide/scripts/link/*
 
             makeWrapper $out/share/xyzide/scripts/xyzide.sh $out/bin/xyzide \
               --prefix PATH : "${pkgs.lib.makeBinPath runtimeDeps}" \
