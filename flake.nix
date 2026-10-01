@@ -17,6 +17,7 @@
           pkgs.zellij
           pkgs.yazi
           pkgs.jq # scripts/yazi-toggle.sh (Alt+y)
+          pkgs.file # yazi uses it to detect MIME types
         ];
       in
       {

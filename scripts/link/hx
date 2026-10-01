@@ -2,6 +2,10 @@
 
 # named "hx" so zellij passes the clicked path as FILE:LINE
 
+# shrink our floating pane into the corner, like Alt+y's
+zellij action change-floating-pane-coordinates -p "terminal_$ZELLIJ_PANE_ID" \
+  -x 0 -y 0 --width 1 --height 1 -b true 2>/dev/null
+
 ARG="$1"
 FILE="$ARG"
 LINE=""

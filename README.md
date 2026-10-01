@@ -225,15 +225,14 @@ where Escape safely means "cancel".
 
 ## Nix
 
-`flake.nix` builds a package that bundles `zellij`, `yazi`, and `jq` (used by
-the `Alt y` focus toggle) so the installed `xyzide` binary works without any
+`flake.nix` builds a package that bundles `zellij`, `yazi`, `jq` (used by
+the `Alt y` focus toggle), and `file` (yazi shells out to it to detect MIME
+types) so the installed `xyzide` binary works without any
 of them already being on `$PATH`. The
 editor is deliberately **not** bundled — xyzide always launches whatever
 `$EDITOR` points at in your own environment.
 
 Supports `x86_64-linux`, `aarch64-linux`, `x86_64-darwin`, `aarch64-darwin`.
-`ueberzugpp` and `chafa` are only added on systems nixpkgs actually packages
-them for, so the build never breaks on a platform missing one.
 
 ### Image previews under zellij
 
